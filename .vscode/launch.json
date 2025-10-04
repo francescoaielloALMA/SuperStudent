@@ -6,9 +6,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net9.0/TabellineVocali.dll",
+            "program": "${workspaceFolder}/TabellineVocali/bin/Debug/net9.0/TabellineVocali.dll",
             "args": [],
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/TabellineVocali",
             "stopAtEntry": false,
             "serverReadyAction": {
                 "action": "openExternally",
@@ -23,7 +23,7 @@
             "type": "chrome",
             "request": "launch",
             "url": "http://localhost:5222",
-            "webRoot": "${workspaceFolder}/wwwroot"
+            "webRoot": "${workspaceFolder}/TabellineVocali/wwwroot"
         },
         {
             "name": "🔗 Attach to Process",

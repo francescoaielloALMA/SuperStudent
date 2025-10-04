@@ -99,6 +99,13 @@
                             @currentQuestion.a × @currentQuestion.b = ?
                         </h2>
                         
+
+                        <div class="mb-4">
+                            <input type="number" class="form-control form-control-lg text-center" 
+                                   @bind="userAnswer" @bind:event="oninput" @onkeydown="HandleKeyPress" 
+                                   placeholder="Inserisci la risposta..." disabled="@isVoiceListening" />
+                        </div>
+
                         @if (!string.IsNullOrEmpty(feedbackMessage))
                         {
                             <div class="alert @(isLastAnswerCorrect ? "alert-success" : "alert-danger") alert-dismissible">
@@ -106,11 +113,6 @@
                             </div>
                         }
 
-                        <div class="mb-4">
-                            <input type="number" class="form-control form-control-lg text-center" 
-                                   @bind="userAnswer" @onkeypress="HandleKeyPress" 
-                                   placeholder="Inserisci la risposta..." disabled="@isVoiceListening" />
-                        </div>
 
                         <div class="d-grid gap-2 d-md-block">
                             <button class="btn btn-success btn-lg me-2" @onclick="SubmitAnswer" disabled="@isVoiceListening">
@@ -172,7 +174,7 @@
 </div>
 
 @code {
-    private int durataMinuti = 2;
+    private int durataMinuti = 5;
     private (int a, int b) currentQuestion;
     private int? userAnswer;
     private string feedbackMessage = "";
@@ -265,7 +267,8 @@
         if (isCorrect)
         {
             feedbackMessage = GetCorrectMessage();
-            await Task.Delay(1500);
+            StateHasChanged();
+            await Task.Delay(300);
             feedbackMessage = "";
             GenerateNewQuestion();
         }
@@ -275,7 +278,8 @@
             if (tentativi >= 3)
             {
                 feedbackMessage = $"❌ Risposta sbagliata! La risposta corretta era: {currentQuestion.a * currentQuestion.b}";
-                await Task.Delay(2000);
+                StateHasChanged();
+                await Task.Delay(300);
                 feedbackMessage = "";
                 GenerateNewQuestion();
             }
@@ -398,9 +402,18 @@
 
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter")
+        if (e.Key == "Enter" && !isVoiceListening)
         {
-            await SubmitAnswer();
+            // Forza l'aggiornamento del binding prima di inviare
+            await InvokeAsync(StateHasChanged);
+            
+            // Piccolo delay per assicurarsi che il binding sia completato
+            await Task.Delay(10);
+            
+            if (userAnswer.HasValue)
+            {
+                await SubmitAnswer();
+            }
         }
     }
 
