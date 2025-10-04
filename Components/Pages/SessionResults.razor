@@ -1,0 +1,170 @@
+@using TabellineVocali.Models
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<div class="card shadow-lg">
+    <div class="card-header bg-primary text-white text-center">
+        <h2 class="mb-0">🎯 RIEPILOGO FINALE</h2>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <!-- Statistiche Generali -->
+            <div class="col-md-6 mb-4">
+                <h5 class="text-primary">📊 STATISTICHE GENERALI</h5>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="bg-success text-white rounded p-3">
+                            <h3>@Stats.Corrette</h3>
+                            <small>Corrette</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="bg-danger text-white rounded p-3">
+                            <h3>@Stats.Sbagliate</h3>
+                            <small>Sbagliate</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="bg-info text-white rounded p-3">
+                            <h3>@Stats.AccuratezzaPercentuale.ToString("F1")%</h3>
+                            <small>Accuratezza</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Velocità -->
+            <div class="col-md-6 mb-4">
+                <h5 class="text-primary">⚡ ANALISI VELOCITÀ</h5>
+                <ul class="list-unstyled">
+                    <li><strong>⏱️ Tempo medio:</strong> @Stats.TempoMedio.ToString("F2")s</li>
+                    @if (Stats.TempoMinimo > 0)
+                    {
+                        <li><strong>🏃 Record velocità:</strong> @Stats.TempoMinimo.ToString("F2")s</li>
+                    }
+                    <li><strong>🐌 Tempo massimo:</strong> @Stats.TempoMassimo.ToString("F2")s</li>
+                    @if (Stats.TempoMedio > 0)
+                    {
+                        <li><strong>🚀 Ritmo:</strong> @((60.0 / Stats.TempoMedio).ToString("F1")) risposte/min</li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Distribuzione Tempi -->
+            <div class="col-md-6 mb-4">
+                <h5 class="text-primary">📈 DISTRIBUZIONE TEMPI</h5>
+                <div class="progress mb-2" style="height: 25px;">
+                    @{
+                        var totale = Stats.DistribuzioneTempo.Sotto1s + Stats.DistribuzioneTempo.Da1a2s + 
+                                    Stats.DistribuzioneTempo.Da2a3s + Stats.DistribuzioneTempo.Sopra3s;
+                        var percentSotto1s = totale > 0 ? (Stats.DistribuzioneTempo.Sotto1s * 100.0 / totale) : 0;
+                        var percent1a2s = totale > 0 ? (Stats.DistribuzioneTempo.Da1a2s * 100.0 / totale) : 0;
+                        var percent2a3s = totale > 0 ? (Stats.DistribuzioneTempo.Da2a3s * 100.0 / totale) : 0;
+                        var percentSopra3s = totale > 0 ? (Stats.DistribuzioneTempo.Sopra3s * 100.0 / totale) : 0;
+                    }
+                    <div class="progress-bar bg-success" style="width: @(percentSotto1s)%">
+                        @Stats.DistribuzioneTempo.Sotto1s &lt;1s
+                    </div>
+                    <div class="progress-bar bg-info" style="width: @(percent1a2s)%">
+                        @Stats.DistribuzioneTempo.Da1a2s 1-2s
+                    </div>
+                    <div class="progress-bar bg-warning" style="width: @(percent2a3s)%">
+                        @Stats.DistribuzioneTempo.Da2a3s 2-3s
+                    </div>
+                    <div class="progress-bar bg-danger" style="width: @(percentSopra3s)%">
+                        @Stats.DistribuzioneTempo.Sopra3s &gt;3s
+                    </div>
+                </div>
+            </div>
+
+            <!-- Streak -->
+            <div class="col-md-6 mb-4">
+                <h5 class="text-primary">🔥 STREAK E PROGRESSO</h5>
+                <ul class="list-unstyled">
+                    <li><strong>🏆 Streak massimo:</strong> @Stats.StreakMassimo risposte consecutive</li>
+                    @if (Stats.TrendAccuratezza != 0)
+                    {
+                        <li><strong>📈 Trend:</strong> 
+                            @if (Stats.TrendAccuratezza > 0)
+                            {
+                                <span class="text-success">📈 MIGLIORAMENTO! (+@Stats.TrendAccuratezza.ToString("F1")%)</span>
+                            }
+                            else
+                            {
+                                <span class="text-warning">📉 Calo prestazioni (@Stats.TrendAccuratezza.ToString("F1")%)</span>
+                            }
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        @if (Stats.TabellePiuDifficili.Any())
+        {
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <h5 class="text-primary">❌ TABELLINE PIÙ DIFFICILI</h5>
+                    <ul class="list-unstyled">
+                        @foreach (var item in Stats.TabellePiuDifficili)
+                        {
+                            <li>🔴 <strong>@item.Key:</strong> @item.Value errori</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
+
+        @if (Stats.TabelleVeloci.Any())
+        {
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <h5 class="text-primary">⚡ TABELLINE PIÙ VELOCI</h5>
+                    <ul class="list-unstyled">
+                        @foreach (var item in Stats.TabelleVeloci)
+                        {
+                            <li>🟢 <strong>@item.Key:</strong> @item.Value.ToString("F2")s medio</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
+
+        <!-- Valutazione Complessiva -->
+        <div class="row">
+            <div class="col-12 text-center mb-4">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h3 class="text-primary">🏆 VALUTAZIONE COMPLESSIVA</h3>
+                        <h2 class="text-success">@Stats.PunteggioComplessivo.ToString("F1")/100</h2>
+                        <h4 class="text-primary">@Stats.Livello</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Achievements -->
+        @if (Stats.Achievements.Any())
+        {
+            <div class="row">
+                <div class="col-12">
+                    <h5 class="text-primary">🏅 ACHIEVEMENTS SBLOCCATI</h5>
+                    <div class="row">
+                        @foreach (var achievement in Stats.Achievements)
+                        {
+                            <div class="col-md-6 mb-2">
+                                <div class="badge bg-warning text-dark p-3 w-100">
+                                    @achievement
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public SessionStats Stats { get; set; } = new();
+}

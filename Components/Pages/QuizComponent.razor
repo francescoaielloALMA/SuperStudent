@@ -1,0 +1,457 @@
+@page "/quiz"
+@using TabellineVocali.Models
+@using TabellineVocali.Services
+@inject QuizService QuizService
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Quiz Tabelline con Riconoscimento Vocale</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center mb-4">
+                <h1 class="display-4 text-primary">🎯 Quiz Tabelline</h1>
+                <p class="lead">Rispondi con la voce o con la tastiera!</p>
+            </div>
+        </div>
+    </div>
+
+    @if (!QuizService.HasActiveSession)
+    {
+        <!-- Setup Session -->
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-body text-center">
+                        <h3 class="card-title mb-4">⏱️ Configura Sessione</h3>
+                        <div class="mb-3">
+                            <label for="durata" class="form-label">Durata (minuti):</label>
+                            <input type="number" class="form-control form-control-lg text-center" 
+                                   id="durata" @bind="durataMinuti" min="1" max="60" />
+                        </div>
+                        <button class="btn btn-primary btn-lg" @onclick="StartSession">
+                            🚀 Inizia Quiz
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (isSessionExpired)
+    {
+        <!-- Session Results -->
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <SessionResults Stats="@sessionStats" />
+                <div class="text-center mt-4">
+                    <button class="btn btn-primary btn-lg" @onclick="ResetSession">
+                        🔄 Nuova Sessione
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Active Quiz -->
+        <div class="row">
+            <!-- Timer and Stats -->
+            <div class="col-md-3">
+                <div class="card mb-3">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">⏰ Tempo Rimanente</h5>
+                        <h2 class="text-primary">@FormatTime(QuizService.CurrentSession?.TempoRimanente ?? TimeSpan.Zero)</h2>
+                    </div>
+                </div>
+                
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">📊 Statistiche</h6>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="text-success h4">@QuizService.CurrentSession?.Corrette</div>
+                                <small>Corrette</small>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-danger h4">@QuizService.CurrentSession?.Sbagliate</div>
+                                <small>Sbagliate</small>
+                            </div>
+                        </div>
+                        <div class="text-center mt-2">
+                            <div class="text-info h5">@(QuizService.CurrentSession?.AccuratezzaPercentuale.ToString("F1") ?? "0")%</div>
+                            <small>Accuratezza</small>
+                        </div>
+                        <div class="text-center mt-2">
+                            <div class="text-warning h5">🔥 @QuizService.CurrentSession?.StreakCorrente</div>
+                            <small>Streak Attuale</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question Area -->
+            <div class="col-md-6">
+                <div class="card shadow-lg">
+                    <div class="card-body text-center p-5">
+                        <h2 class="display-3 mb-4">
+                            @currentQuestion.a × @currentQuestion.b = ?
+                        </h2>
+                        
+                        @if (!string.IsNullOrEmpty(feedbackMessage))
+                        {
+                            <div class="alert @(isLastAnswerCorrect ? "alert-success" : "alert-danger") alert-dismissible">
+                                @feedbackMessage
+                            </div>
+                        }
+
+                        <div class="mb-4">
+                            <input type="number" class="form-control form-control-lg text-center" 
+                                   @bind="userAnswer" @onkeypress="HandleKeyPress" 
+                                   placeholder="Inserisci la risposta..." disabled="@isVoiceListening" />
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-block">
+                            <button class="btn btn-success btn-lg me-2" @onclick="SubmitAnswer" disabled="@isVoiceListening">
+                                ✅ Conferma
+                            </button>
+                            <button class="btn @(isVoiceListening ? "btn-danger" : "btn-primary") btn-lg" 
+                                    @onclick="ToggleVoiceRecognition" disabled="@(!isVoiceSupported)">
+                                @if (isVoiceListening)
+                                {
+                                    <span>🛑 Stop</span>
+                                }
+                                else
+                                {
+                                    <span>🎤 Voce</span>
+                                }
+                            </button>
+                        </div>
+
+                        @if (!isVoiceSupported)
+                        {
+                            <div class="alert alert-warning mt-3">
+                                ⚠️ Riconoscimento vocale non supportato su questo browser
+                            </div>
+                        }
+                        
+                        @if (isVoiceListening)
+                        {
+                            <div class="alert alert-info mt-3">
+                                🎤 Sto ascoltando... Pronuncia la tua risposta
+                            </div>
+                        }
+
+                        @if (tentativi > 0)
+                        {
+                            <div class="alert alert-warning mt-3">
+                                Tentativo @(tentativi + 1) di 3
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Voice Instructions -->
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">🎤 Istruzioni Vocali</h6>
+                        <ul class="list-unstyled small">
+                            <li>✅ Pronuncia chiaramente il numero</li>
+                            <li>✅ Es: "ventiquattro", "quarantadue"</li>
+                            <li>✅ Oppure i singoli numeri: "2-4"</li>
+                            <li>⚠️ Assicurati che il microfono sia attivo</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private int durataMinuti = 2;
+    private (int a, int b) currentQuestion;
+    private int? userAnswer;
+    private string feedbackMessage = "";
+    private bool isLastAnswerCorrect;
+    private int tentativi = 0;
+    private DateTime questionStartTime;
+    private bool isVoiceSupported = false;
+    private bool isVoiceListening = false;
+    private bool isSessionExpired = false;
+    private SessionStats? sessionStats;
+    private Timer? sessionTimer;
+    private IJSObjectReference? jsModule;
+    private DotNetObjectReference<QuizComponent>? dotNetRef;
+
+    protected override void OnInitialized()
+    {
+        dotNetRef = DotNetObjectReference.Create(this);
+        // Non caricare JavaScript qui durante il prerendering
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Console.WriteLine("🔧 DEBUG: Caricamento JavaScript...");
+            await LoadJavaScriptModule();
+            isVoiceSupported = await JSRuntime.InvokeAsync<bool>("voiceRecognition.initialize");
+            Console.WriteLine($"🎤 DEBUG: Riconoscimento vocale supportato: {isVoiceSupported}");
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadJavaScriptModule()
+    {
+        try
+        {
+            jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/voice-recognition.js");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading JavaScript module: {ex.Message}");
+        }
+    }
+
+    private void StartSession()
+    {
+        Console.WriteLine($"🚀 DEBUG: Avvio sessione - Durata: {durataMinuti} minuti");
+        QuizService.StartNewSession(durataMinuti);
+        GenerateNewQuestion();
+        StartSessionTimer();
+        StateHasChanged();
+        Console.WriteLine($"🎯 DEBUG: Sessione avviata - Prima domanda: {currentQuestion.a} x {currentQuestion.b}");
+    }
+
+    private void ResetSession()
+    {
+        QuizService.EndSession();
+        isSessionExpired = false;
+        sessionStats = null;
+        StopSessionTimer();
+        StateHasChanged();
+    }
+
+    private void GenerateNewQuestion()
+    {
+        currentQuestion = QuizService.GenerateQuestion();
+        userAnswer = null;
+        feedbackMessage = "";
+        tentativi = 0;
+        questionStartTime = DateTime.Now;
+        StateHasChanged();
+    }
+
+    private async Task SubmitAnswer()
+    {
+        if (!userAnswer.HasValue) return;
+
+        var tempoRisposta = (DateTime.Now - questionStartTime).TotalSeconds;
+        var isCorrect = QuizService.SubmitAnswer(
+            currentQuestion.a, 
+            currentQuestion.b, 
+            userAnswer.Value, 
+            tempoRisposta, 
+            tentativi + 1,
+            false
+        );
+
+        isLastAnswerCorrect = isCorrect;
+
+        if (isCorrect)
+        {
+            feedbackMessage = GetCorrectMessage();
+            await Task.Delay(1500);
+            feedbackMessage = "";
+            GenerateNewQuestion();
+        }
+        else
+        {
+            tentativi++;
+            if (tentativi >= 3)
+            {
+                feedbackMessage = $"❌ Risposta sbagliata! La risposta corretta era: {currentQuestion.a * currentQuestion.b}";
+                await Task.Delay(2000);
+                feedbackMessage = "";
+                GenerateNewQuestion();
+            }
+            else
+            {
+                feedbackMessage = $"❌ Sbagliato! Riprova (tentativo {tentativi + 1} di 3)";
+                userAnswer = null;
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task ToggleVoiceRecognition()
+    {
+        if (!isVoiceSupported)
+        {
+            feedbackMessage = "❌ Riconoscimento vocale non supportato";
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            if (isVoiceListening)
+            {
+                await JSRuntime.InvokeVoidAsync("voiceRecognition.stopListening");
+            }
+            else
+            {
+                var success = await JSRuntime.InvokeAsync<bool>("voiceRecognition.startListening", dotNetRef);
+                if (!success)
+                {
+                    feedbackMessage = "❌ Errore nell'avvio del riconoscimento vocale";
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            feedbackMessage = $"❌ Errore JavaScript: {ex.Message}";
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public void OnVoiceStart()
+    {
+        isVoiceListening = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public async Task OnVoiceResult(string result)
+    {
+        if (int.TryParse(result, out var number))
+        {
+            userAnswer = number;
+            isVoiceListening = false;
+            
+            // Auto-submit voice answer
+            var tempoRisposta = (DateTime.Now - questionStartTime).TotalSeconds;
+            var isCorrect = QuizService.SubmitAnswer(
+                currentQuestion.a, 
+                currentQuestion.b, 
+                number, 
+                tempoRisposta, 
+                tentativi + 1,
+                true // Voice answer
+            );
+
+            isLastAnswerCorrect = isCorrect;
+
+            if (isCorrect)
+            {
+                feedbackMessage = GetCorrectMessage() + " 🎤";
+                await Task.Delay(1500);
+                feedbackMessage = "";
+                GenerateNewQuestion();
+            }
+            else
+            {
+                tentativi++;
+                if (tentativi >= 3)
+                {
+                    feedbackMessage = $"❌ Risposta sbagliata! La risposta corretta era: {currentQuestion.a * currentQuestion.b}";
+                    await Task.Delay(2000);
+                    feedbackMessage = "";
+                    GenerateNewQuestion();
+                }
+                else
+                {
+                    feedbackMessage = $"❌ Sbagliato! Riprova (tentativo {tentativi + 1} di 3)";
+                    userAnswer = null;
+                }
+            }
+        }
+        else
+        {
+            feedbackMessage = "❌ Non ho capito il numero. Riprova con la voce o inseriscilo manualmente.";
+        }
+        
+        await InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public void OnVoiceError(string error)
+    {
+        isVoiceListening = false;
+        feedbackMessage = $"❌ {error}";
+        InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public void OnVoiceEnd()
+    {
+        isVoiceListening = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SubmitAnswer();
+        }
+    }
+
+    private string GetCorrectMessage()
+    {
+        var messages = new[] { "✅ Perfetto!", "✅ Bravo!", "✅ Ottimo!", "✅ Fantastico!", "✅ Corretto!" };
+        var random = new Random();
+        return messages[random.Next(messages.Length)];
+    }
+
+    private void StartSessionTimer()
+    {
+        sessionTimer = new Timer(CheckSessionExpired, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
+
+    private void StopSessionTimer()
+    {
+        sessionTimer?.Dispose();
+        sessionTimer = null;
+    }
+
+    private void CheckSessionExpired(object? state)
+    {
+        if (QuizService.IsSessionExpired())
+        {
+            QuizService.EndSession();
+            sessionStats = QuizService.CalculateStats();
+            isSessionExpired = true;
+            StopSessionTimer();
+            InvokeAsync(StateHasChanged);
+        }
+        else
+        {
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private string FormatTime(TimeSpan time)
+    {
+        if (time.TotalSeconds <= 0) return "00:00";
+        return $"{(int)time.TotalMinutes:D2}:{time.Seconds:D2}";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        StopSessionTimer();
+        dotNetRef?.Dispose();
+        
+        if (jsModule != null)
+        {
+            await jsModule.DisposeAsync();
+        }
+    }
+}

@@ -1,0 +1,34 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "🚀 Debug Blazor Server App",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/bin/Debug/net9.0/TabellineVocali.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            }
+        },
+        {
+            "name": "🌐 Debug Browser (Chrome)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:5222",
+            "webRoot": "${workspaceFolder}/wwwroot"
+        },
+        {
+            "name": "🔗 Attach to Process",
+            "type": "coreclr",
+            "request": "attach"
+        }
+    ]
+}
