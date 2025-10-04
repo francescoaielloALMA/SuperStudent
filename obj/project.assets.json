@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/francescoaiello/Desktop/Tabelline/RiconoscimentoVocale/TabellineVocali.csproj",
+      "projectUniqueName": "/Users/francescoaiello/Documents/Coding/SuperStudent/TabellineVocali.csproj",
       "projectName": "TabellineVocali",
-      "projectPath": "/Users/francescoaiello/Desktop/Tabelline/RiconoscimentoVocale/TabellineVocali.csproj",
+      "projectPath": "/Users/francescoaiello/Documents/Coding/SuperStudent/TabellineVocali.csproj",
       "packagesPath": "/Users/francescoaiello/.nuget/packages/",
-      "outputPath": "/Users/francescoaiello/Desktop/Tabelline/RiconoscimentoVocale/obj/",
+      "outputPath": "/Users/francescoaiello/Documents/Coding/SuperStudent/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/Users/francescoaiello/.nuget/NuGet/NuGet.Config"

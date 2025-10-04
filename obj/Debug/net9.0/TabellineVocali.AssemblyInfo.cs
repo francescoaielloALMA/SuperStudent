@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TabellineVocali")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+48df3ffe6166b9dd0cf15d3acae2c9e25f33b9d2")]
 [assembly: System.Reflection.AssemblyProductAttribute("TabellineVocali")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TabellineVocali")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
