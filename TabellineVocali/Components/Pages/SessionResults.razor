@@ -1,6 +1,17 @@
 @using TabellineVocali.Models
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
+@if (Stats == null)
+{
+    <div class="card">
+        <div class="card-body text-center">
+            <h3 class="text-warning">⚠️ Statistiche non disponibili</h3>
+            <p>Non è possibile mostrare le statistiche della sessione.</p>
+        </div>
+    </div>
+}
+else
+{
 <div class="card shadow-lg">
     <div class="card-header bg-primary text-white text-center">
         <h2 class="mb-0">🎯 RIEPILOGO FINALE</h2>
@@ -164,6 +175,7 @@
         }
     </div>
 </div>
+}
 
 @code {
     [Parameter] public SessionStats Stats { get; set; } = new();

@@ -1,4 +1,11 @@
-// Voice Recognition Service
+// Funzione helper per impostare il riferimento .NET
+window.setDotNetRef = function(dotNetRef) {
+    console.log('🔧 Setting DotNet reference:', dotNetRef);
+    window.currentDotNetRef = dotNetRef;
+    return true;
+};
+
+// Modulo riconoscimento vocale
 window.voiceRecognition = {
     recognition: null,
     isSupported: false,
@@ -37,11 +44,18 @@ window.voiceRecognition = {
             return false;
         }
 
+        // Use global reference if no helper provided (for push-to-talk)
+        const helper = dotnetHelper || window.currentDotNetRef;
+        if (!helper) {
+            console.error('No .NET helper available');
+            return false;
+        }
+
         this.isListening = true;
         
         this.recognition.onstart = () => {
             console.log('Voice recognition started');
-            dotnetHelper.invokeMethodAsync('OnVoiceStart');
+            helper.invokeMethodAsync('OnVoiceStart');
         };
 
         this.recognition.onresult = (event) => {
@@ -51,9 +65,9 @@ window.voiceRecognition = {
             // Try to extract number from speech
             const number = this.extractNumber(result);
             if (number !== null) {
-                dotnetHelper.invokeMethodAsync('OnVoiceResult', number.toString());
+                helper.invokeMethodAsync('OnVoiceResult', number.toString());
             } else {
-                dotnetHelper.invokeMethodAsync('OnVoiceError', 'Non ho capito il numero. Riprova.');
+                helper.invokeMethodAsync('OnVoiceError', 'Non ho capito il numero. Riprova.');
             }
         };
 
@@ -77,13 +91,13 @@ window.voiceRecognition = {
                     break;
             }
             
-            dotnetHelper.invokeMethodAsync('OnVoiceError', errorMessage);
+            helper.invokeMethodAsync('OnVoiceError', errorMessage);
         };
 
         this.recognition.onend = () => {
             console.log('Voice recognition ended');
             this.isListening = false;
-            dotnetHelper.invokeMethodAsync('OnVoiceEnd');
+            helper.invokeMethodAsync('OnVoiceEnd');
         };
 
         try {
