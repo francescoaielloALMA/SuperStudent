@@ -17,7 +17,7 @@
         </div>
     </div>
 
-    @if (!QuizService.HasActiveSession)
+    @if (!QuizService.HasActiveSession && !isSessionExpired)
     {
         <!-- Setup Session -->
         <div class="row justify-content-center">
@@ -220,7 +220,12 @@
 
     private void ResetSession()
     {
-        QuizService.EndSession();
+        // Termina la sessione se non è già stata terminata
+        if (QuizService.HasActiveSession || QuizService.CurrentSession != null)
+        {
+            QuizService.EndSession();
+        }
+        
         isSessionExpired = false;
         sessionStats = null;
         StopSessionTimer();
@@ -361,11 +366,11 @@
         {
             Console.WriteLine("🕒 DEBUG: Sessione scaduta, calcolando statistiche...");
             
-            // Prima di terminare la sessione, calcola le statistiche
+            // Calcola le statistiche PRIMA di terminare la sessione
             sessionStats = QuizService.CalculateStats();
             Console.WriteLine($"📊 DEBUG: Statistiche calcolate - Corrette: {sessionStats?.Corrette}, Sbagliate: {sessionStats?.Sbagliate}");
             
-            QuizService.EndSession();
+            // NON chiamare EndSession() qui, sarà chiamato da ResetSession()
             isSessionExpired = true;
             StopSessionTimer();
             InvokeAsync(StateHasChanged);

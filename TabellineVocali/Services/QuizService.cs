@@ -121,10 +121,10 @@ public class QuizService
         stats.PunteggioComplessivo = (punteggioVelocita * 0.4 + stats.AccuratezzaPercentuale * 0.6);
 
         // Determina livello
-        stats.Livello = stats.PunteggioComplessivo >= 90 ? "🏆 ESPERTO" :
-                        stats.PunteggioComplessivo >= 75 ? "⭐ AVANZATO" :
-                        stats.PunteggioComplessivo >= 60 ? "📈 INTERMEDIO" :
-                        stats.PunteggioComplessivo >= 40 ? "🌱 PRINCIPIANTE" : "🚀 IN ALLENAMENTO";
+        stats.Livello = stats.PunteggioComplessivo >= 80 ? "🏆 ESPERTO" :
+                        stats.PunteggioComplessivo >= 65 ? "⭐ AVANZATO" :
+                        stats.PunteggioComplessivo >= 45 ? "📈 INTERMEDIO" :
+                        stats.PunteggioComplessivo >= 25 ? "🌱 PRINCIPIANTE" : "🚀 IN ALLENAMENTO";
 
         // Calcola achievements
         stats.Achievements = CalculateAchievements(stats);
@@ -171,18 +171,16 @@ public class QuizService
 
         if (_currentSession == null) return achievements;
 
-        if (stats.StreakMassimo >= 10) 
-            achievements.Add("🔥 STREAK MASTER (10+ consecutive)");
-        if (stats.TempoMedio > 0 && stats.TempoMedio < 1.5) 
-            achievements.Add("⚡ VELOCISTA (sub 1.5s avg)");
-        if (stats.AccuratezzaPercentuale >= 95) 
-            achievements.Add("🎯 PRECISION MASTER (95%+ accuracy)");
-        if (stats.DistribuzioneTempo.Sotto1s >= 5) 
-            achievements.Add("💨 SPEED DEMON (5+ sub-1s answers)");
-        if (_currentSession.Risposte.Count >= 20) 
-            achievements.Add("💪 ENDURANCE (20+ questions)");
-        if (_currentSession.Risposte.Any(r => r.UsedVoice))
-            achievements.Add("🎤 VOICE MASTER (used voice recognition)");
+        if (stats.StreakMassimo >= 5) 
+            achievements.Add("🔥 STREAK MASTER (5+ consecutive)");
+        if (stats.TempoMedio > 0 && stats.TempoMedio < 2.5) 
+            achievements.Add("⚡ VELOCISTA (sub 2.5s avg)");
+        if (stats.AccuratezzaPercentuale >= 80) 
+            achievements.Add("🎯 PRECISION MASTER (80%+ accuracy)");
+        if (stats.DistribuzioneTempo.Sotto1s >= 3) 
+            achievements.Add("💨 SPEED DEMON (3+ sub-1s answers)");
+        if (_currentSession.Risposte.Count >= 15) 
+            achievements.Add("💪 ENDURANCE (15+ questions)");
 
         return achievements;
     }
