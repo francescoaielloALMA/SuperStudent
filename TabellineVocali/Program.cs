@@ -8,7 +8,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Add our custom services
-builder.Services.AddSingleton<QuizService>();
+builder.Services.AddScoped<QuizService>();
 
 var app = builder.Build();
 

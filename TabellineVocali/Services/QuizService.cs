@@ -5,33 +5,36 @@ namespace TabellineVocali.Services;
 public class QuizService
 {
     private readonly Random _random = new();
-    private QuizSession? _currentSession;
+    private readonly Dictionary<string, QuizSession> _sessions = new();
+    private string _sessionId = Guid.NewGuid().ToString();
 
-    public QuizSession? CurrentSession => _currentSession;
-    public bool HasActiveSession => _currentSession?.IsActive == true;
+    public QuizSession? CurrentSession => _sessions.TryGetValue(_sessionId, out var session) ? session : null;
+    public bool HasActiveSession => CurrentSession?.IsActive == true;
 
     public QuizSession StartNewSession(int durataMinuti)
     {
-        _currentSession = new QuizSession
+        var session = new QuizSession
         {
             DurataMinuti = durataMinuti,
             InizioSessione = DateTime.Now,
             IsActive = true
         };
-        return _currentSession;
+        _sessions[_sessionId] = session;
+        return session;
     }
 
     public void EndSession()
     {
-        if (_currentSession != null)
+        if (_sessions.TryGetValue(_sessionId, out var session))
         {
-            _currentSession.IsActive = false;
+            session.IsActive = false;
         }
     }
 
     public (int a, int b) GenerateQuestion()
     {
-        if (_currentSession == null) throw new InvalidOperationException("Nessuna sessione attiva");
+        var currentSession = CurrentSession;
+        if (currentSession == null) throw new InvalidOperationException("Nessuna sessione attiva");
 
         int a, b;
         string chiaveTabellina;
@@ -42,15 +45,16 @@ public class QuizService
             a = _random.Next(2, 10);
             b = _random.Next(2, 10);
             chiaveTabellina = $"{a}x{b}";
-        } while (chiaveTabellina == _currentSession.UltimaDomanda && _currentSession.Risposte.Any());
+        } while (chiaveTabellina == currentSession.UltimaDomanda && currentSession.Risposte.Any());
 
-        _currentSession.UltimaDomanda = chiaveTabellina;
+        currentSession.UltimaDomanda = chiaveTabellina;
         return (a, b);
     }
 
     public bool SubmitAnswer(int a, int b, int risposta, double tempoRisposta, int tentativi, bool usedVoice = false)
     {
-        if (_currentSession == null) throw new InvalidOperationException("Nessuna sessione attiva");
+        var currentSession = CurrentSession;
+        if (currentSession == null) throw new InvalidOperationException("Nessuna sessione attiva");
 
         var rispostaCorretta = a * b;
         var isCorretta = risposta == rispostaCorretta;
@@ -69,33 +73,33 @@ public class QuizService
             UsedVoice = usedVoice
         };
 
-        _currentSession.Risposte.Add(questionResult);
+        currentSession.Risposte.Add(questionResult);
 
         if (isCorretta)
         {
             // Aggiorna statistiche per risposta corretta
-            if (!_currentSession.TempiPerTabellina.ContainsKey(chiaveTabellina))
-                _currentSession.TempiPerTabellina[chiaveTabellina] = new List<double>();
+            if (!currentSession.TempiPerTabellina.ContainsKey(chiaveTabellina))
+                currentSession.TempiPerTabellina[chiaveTabellina] = new List<double>();
             
-            _currentSession.TempiPerTabellina[chiaveTabellina].Add(tempoRisposta);
+            currentSession.TempiPerTabellina[chiaveTabellina].Add(tempoRisposta);
             
-            if (tempoRisposta < _currentSession.TempoMinimo) 
-                _currentSession.TempoMinimo = tempoRisposta;
-            if (tempoRisposta > _currentSession.TempoMassimo) 
-                _currentSession.TempoMassimo = tempoRisposta;
+            if (tempoRisposta < currentSession.TempoMinimo) 
+                currentSession.TempoMinimo = tempoRisposta;
+            if (tempoRisposta > currentSession.TempoMassimo) 
+                currentSession.TempoMassimo = tempoRisposta;
             
-            _currentSession.StreakCorrente++;
-            if (_currentSession.StreakCorrente > _currentSession.StreakMassimo)
-                _currentSession.StreakMassimo = _currentSession.StreakCorrente;
+            currentSession.StreakCorrente++;
+            if (currentSession.StreakCorrente > currentSession.StreakMassimo)
+                currentSession.StreakMassimo = currentSession.StreakCorrente;
         }
         else
         {
             // Aggiorna statistiche per risposta sbagliata
-            if (!_currentSession.ErroriPerTabellina.ContainsKey(chiaveTabellina))
-                _currentSession.ErroriPerTabellina[chiaveTabellina] = 0;
+            if (!currentSession.ErroriPerTabellina.ContainsKey(chiaveTabellina))
+                currentSession.ErroriPerTabellina[chiaveTabellina] = 0;
             
-            _currentSession.ErroriPerTabellina[chiaveTabellina]++;
-            _currentSession.StreakCorrente = 0;
+            currentSession.ErroriPerTabellina[chiaveTabellina]++;
+            currentSession.StreakCorrente = 0;
         }
 
         return isCorretta;
@@ -103,27 +107,28 @@ public class QuizService
 
     public SessionStats CalculateStats()
     {
-        if (_currentSession == null) return new SessionStats();
+        var currentSession = CurrentSession;
+        if (currentSession == null) return new SessionStats();
 
-        var totaleDomande = _currentSession.Corrette + _currentSession.Sbagliate;
-        var accuratezza = totaleDomande > 0 ? _currentSession.Corrette * 100.0 / totaleDomande : 0;
+        var totaleDomande = currentSession.Corrette + currentSession.Sbagliate;
+        var accuratezza = totaleDomande > 0 ? currentSession.Corrette * 100.0 / totaleDomande : 0;
         
-        var risposteValide = _currentSession.Risposte.Where(r => r.TempoRisposta > 0);
+        var risposteValide = currentSession.Risposte.Where(r => r.TempoRisposta > 0);
         var tempoMedio = risposteValide.Any() ? risposteValide.Average(r => r.TempoRisposta) : 0;
         var tempoMinimo = risposteValide.Any() ? risposteValide.Min(r => r.TempoRisposta) : 0;
         var tempoMassimo = risposteValide.Any() ? risposteValide.Max(r => r.TempoRisposta) : 0;
         
         var stats = new SessionStats
         {
-            Corrette = _currentSession.Corrette,
-            Sbagliate = _currentSession.Sbagliate,
-            TentativiTotali = _currentSession.TentativiTotali,
-            TentativiErrati = _currentSession.TentativiErrati,
+            Corrette = currentSession.Corrette,
+            Sbagliate = currentSession.Sbagliate,
+            TentativiTotali = currentSession.TentativiTotali,
+            TentativiErrati = currentSession.TentativiErrati,
             AccuratezzaPercentuale = accuratezza,
             TempoMedio = tempoMedio,
             TempoMinimo = tempoMinimo,
             TempoMassimo = tempoMassimo,
-            StreakMassimo = _currentSession.StreakMassimo
+            StreakMassimo = currentSession.StreakMassimo
         };
 
         // Calcola punteggio complessivo
@@ -140,13 +145,13 @@ public class QuizService
         stats.Achievements = CalculateAchievements(stats);
 
         // Tabelline più difficili
-        stats.TabellePiuDifficili = _currentSession.ErroriPerTabellina
+        stats.TabellePiuDifficili = currentSession.ErroriPerTabellina
             .OrderByDescending(x => x.Value)
             .Take(3)
             .ToList();
 
         // Tabelline più veloci
-        stats.TabelleVeloci = _currentSession.TempiPerTabellina
+        stats.TabelleVeloci = currentSession.TempiPerTabellina
             .Where(x => x.Value.Any())
             .OrderBy(x => x.Value.Average())
             .Take(3)
@@ -154,7 +159,7 @@ public class QuizService
             .ToList();
 
         // Distribuzione tempi
-        var risposteCorrette = _currentSession.Risposte.Where(r => r.IsCorretta);
+        var risposteCorrette = currentSession.Risposte.Where(r => r.IsCorretta);
         stats.DistribuzioneTempo = new DistribuzioneTempo
         {
             Sotto1s = risposteCorrette.Count(r => r.TempoRisposta < 1.0),
@@ -164,11 +169,11 @@ public class QuizService
         };
 
         // Trend accuratezza (prima metà vs seconda metà)
-        var metaSessione = _currentSession.Risposte.Count / 2;
+        var metaSessione = currentSession.Risposte.Count / 2;
         if (metaSessione > 0)
         {
-            var accuratezzaPrimaMeta = _currentSession.Risposte.Take(metaSessione).Count(r => r.IsCorretta) * 100.0 / metaSessione;
-            var accuratezzaSecondaMeta = _currentSession.Risposte.Skip(metaSessione).Count(r => r.IsCorretta) * 100.0 / (_currentSession.Risposte.Count - metaSessione);
+            var accuratezzaPrimaMeta = currentSession.Risposte.Take(metaSessione).Count(r => r.IsCorretta) * 100.0 / metaSessione;
+            var accuratezzaSecondaMeta = currentSession.Risposte.Skip(metaSessione).Count(r => r.IsCorretta) * 100.0 / (currentSession.Risposte.Count - metaSessione);
             stats.TrendAccuratezza = accuratezzaSecondaMeta - accuratezzaPrimaMeta;
         }
 
@@ -178,8 +183,9 @@ public class QuizService
     private List<string> CalculateAchievements(SessionStats stats)
     {
         var achievements = new List<string>();
+        var currentSession = CurrentSession;
 
-        if (_currentSession == null) return achievements;
+        if (currentSession == null) return achievements;
 
         if (stats.StreakMassimo >= 5) 
             achievements.Add("🔥 STREAK MASTER (5+ consecutive)");
@@ -189,7 +195,7 @@ public class QuizService
             achievements.Add("🎯 PRECISION MASTER (80%+ accuracy)");
         if (stats.DistribuzioneTempo.Sotto1s >= 3) 
             achievements.Add("💨 SPEED DEMON (3+ sub-1s answers)");
-        if (_currentSession.Risposte.Count >= 15) 
+        if (currentSession.Risposte.Count >= 15) 
             achievements.Add("💪 ENDURANCE (15+ questions)");
 
         return achievements;
@@ -197,8 +203,9 @@ public class QuizService
 
     public bool IsSessionExpired()
     {
-        return _currentSession != null && 
-               _currentSession.IsActive && 
-               _currentSession.TempoRimanente <= TimeSpan.Zero;
+        var currentSession = CurrentSession;
+        return currentSession != null && 
+               currentSession.IsActive && 
+               currentSession.TempoRimanente <= TimeSpan.Zero;
     }
 }
