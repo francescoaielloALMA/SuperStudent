@@ -108,11 +108,11 @@
                     <div class="card-body text-center">
                         <h6 class="card-title">🔄 Controlli</h6>
                         <button class="btn btn-outline-warning btn-sm w-100" @onclick="ResetStats" 
-                                title="Azzera le statistiche e ricomincia il conteggio">
-                            🔄 Reset Statistiche
+                                title="Riavvia completamente la sessione con timer e statistiche resettati">
+                            🔄 Riavvia Sessione
                         </button>
                         <small class="text-muted d-block mt-2">
-                            Azzera contatori mantenendo il timer
+                            Riavvia timer e azzera tutto
                         </small>
                     </div>
                 </div>
@@ -236,26 +236,23 @@
     {
         if (QuizService.HasActiveSession && QuizService.CurrentSession != null)
         {
-            // Reset delle statistiche mantenendo il timer
-            QuizService.CurrentSession.Risposte.Clear();
-            QuizService.CurrentSession.ErroriPerTabellina.Clear();
-            QuizService.CurrentSession.TempiPerTabellina.Clear();
-            QuizService.CurrentSession.StreakCorrente = 0;
-            QuizService.CurrentSession.StreakMassimo = 0;
-            QuizService.CurrentSession.TempoMinimo = double.MaxValue;
-            QuizService.CurrentSession.TempoMassimo = 0;
+            // Ottieni la durata della sessione corrente
+            var durataMinuti = QuizService.CurrentSession.DurataMinuti;
+            
+            // Riavvia completamente la sessione (include reset del timer)
+            QuizService.StartNewSession(durataMinuti);
             
             // Genera una nuova domanda
             GenerateNewQuestion();
             
             // Feedback all'utente
-            feedbackMessage = "🔄 Statistiche azzerate! Ricominciamo da capo!";
+            feedbackMessage = "🔄 Sessione riavviata! Timer e statistiche resettati!";
             StateHasChanged();
             
             // Rimuovi il messaggio dopo 2 secondi
             Task.Delay(2000).ContinueWith(_ => 
             {
-                if (feedbackMessage.StartsWith("🔄 Statistiche azzerate!"))
+                if (feedbackMessage.StartsWith("🔄 Sessione riavviata!"))
                 {
                     feedbackMessage = "";
                     InvokeAsync(StateHasChanged);
