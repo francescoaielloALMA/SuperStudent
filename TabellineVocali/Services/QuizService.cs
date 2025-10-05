@@ -105,14 +105,24 @@ public class QuizService
     {
         if (_currentSession == null) return new SessionStats();
 
+        var totaleDomande = _currentSession.Corrette + _currentSession.Sbagliate;
+        var accuratezza = totaleDomande > 0 ? _currentSession.Corrette * 100.0 / totaleDomande : 0;
+        
+        var risposteValide = _currentSession.Risposte.Where(r => r.TempoRisposta > 0);
+        var tempoMedio = risposteValide.Any() ? risposteValide.Average(r => r.TempoRisposta) : 0;
+        var tempoMinimo = risposteValide.Any() ? risposteValide.Min(r => r.TempoRisposta) : 0;
+        var tempoMassimo = risposteValide.Any() ? risposteValide.Max(r => r.TempoRisposta) : 0;
+        
         var stats = new SessionStats
         {
             Corrette = _currentSession.Corrette,
             Sbagliate = _currentSession.Sbagliate,
-            AccuratezzaPercentuale = _currentSession.AccuratezzaPercentuale,
-            TempoMedio = _currentSession.TempoMedioRisposta,
-            TempoMinimo = _currentSession.TempoMinimo < double.MaxValue ? _currentSession.TempoMinimo : 0,
-            TempoMassimo = _currentSession.TempoMassimo,
+            TentativiTotali = _currentSession.TentativiTotali,
+            TentativiErrati = _currentSession.TentativiErrati,
+            AccuratezzaPercentuale = accuratezza,
+            TempoMedio = tempoMedio,
+            TempoMinimo = tempoMinimo,
+            TempoMassimo = tempoMassimo,
             StreakMassimo = _currentSession.StreakMassimo
         };
 

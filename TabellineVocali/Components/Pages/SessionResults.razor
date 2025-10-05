@@ -41,6 +41,34 @@ else
                         </div>
                     </div>
                 </div>
+                <div class="row text-center mt-3">
+                    <div class="col-6">
+                        <div class="bg-secondary text-white rounded p-2">
+                            <h5>@(Stats.Corrette + Stats.Sbagliate)</h5>
+                            <small>Totale Domande</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="bg-primary text-white rounded p-2">
+                            <h5>@Stats.StreakMassimo</h5>
+                            <small>Best Streak</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="row text-center mt-3">
+                    <div class="col-6">
+                        <div class="bg-warning text-dark rounded p-2">
+                            <h5>@Stats.TentativiTotali</h5>
+                            <small>Tentativi Totali</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="bg-dark text-white rounded p-2">
+                            <h5>@Stats.TentativiErrati</h5>
+                            <small>Tentativi Errati</small>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Velocità -->
@@ -58,6 +86,47 @@ else
                         <li><strong>🚀 Ritmo:</strong> @((60.0 / Stats.TempoMedio).ToString("F1")) risposte/min</li>
                     }
                 </ul>
+            </div>
+        </div>
+
+        <!-- Analisi Efficienza -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h5 class="text-primary">🎯 ANALISI EFFICIENZA</h5>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <h6>📝 Efficienza Risposta</h6>
+                                <span class="badge bg-success fs-6">
+                                    @((Stats.TentativiTotali > 0 ? (Stats.Corrette * 100.0 / Stats.TentativiTotali) : 0).ToString("F1"))%
+                                </span>
+                                <small class="d-block text-muted">Corrette/Tentativi totali</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>🎯 Ratio Successo</h6>
+                                <span class="badge bg-info fs-6">
+                                    @((Stats.TentativiErrati > 0 ? (Stats.Corrette / (double)Stats.TentativiErrati).ToString("F2") : "∞"))
+                                </span>
+                                <small class="d-block text-muted">Corrette per errore</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>💪 Tenacia</h6>
+                                <span class="badge bg-warning text-dark fs-6">
+                                    @((Stats.Corrette > 0 ? (Stats.TentativiTotali / (double)Stats.Corrette).ToString("F1") : "0"))
+                                </span>
+                                <small class="d-block text-muted">Tentativi per successo</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>🔄 Perseveranza</h6>
+                                <span class="badge bg-secondary fs-6">
+                                    @((Stats.Sbagliate > 0 ? (Stats.TentativiErrati / (double)Stats.Sbagliate).ToString("F1") : "0"))
+                                </span>
+                                <small class="d-block text-muted">Ritentativi per sbaglio</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -135,6 +204,31 @@ else
                         @foreach (var item in Stats.TabelleVeloci)
                         {
                             <li>🟢 <strong>@item.Key:</strong> @item.Value.ToString("F2")s medio</li>
+                        }
+                    </ul>
+                </div>
+                
+                <!-- Analisi Aggiuntive -->
+                <div class="col-md-6 mb-4">
+                    <h5 class="text-primary">📋 ANALISI DETTAGLIATE</h5>
+                    <ul class="list-unstyled">
+                        @{
+                            var totaleRisposte = Stats.Corrette + Stats.Sbagliate;
+                            var percentualeCorrette = totaleRisposte > 0 ? (Stats.Corrette * 100.0 / totaleRisposte) : 0;
+                            var percentualeSbagliate = totaleRisposte > 0 ? (Stats.Sbagliate * 100.0 / totaleRisposte) : 0;
+                        }
+                        <li><strong>📊 Rapporto risposte:</strong> @Stats.Corrette:@Stats.Sbagliate</li>
+                        @if (Stats.TempoMedio > 0)
+                        {
+                            <li><strong>⚡ Efficienza:</strong> @((Stats.AccuratezzaPercentuale / Stats.TempoMedio).ToString("F1")) punti/sec</li>
+                        }
+                        @if (Stats.DistribuzioneTempo.Sotto1s > 0)
+                        {
+                            <li><strong>🚀 Risposte rapide:</strong> @Stats.DistribuzioneTempo.Sotto1s (&lt;1s)</li>
+                        }
+                        @if (totaleRisposte > 0)
+                        {
+                            <li><strong>🎯 Ratio successo:</strong> @((double)Stats.Corrette / totaleRisposte * 100).ToString("F1")%</li>
                         }
                     </ul>
                 </div>

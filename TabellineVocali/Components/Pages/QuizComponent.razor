@@ -76,7 +76,7 @@
                 <div class="card mb-3">
                     <div class="card-body text-center">
                         <h5 class="card-title">⏰ Tempo Rimanente</h5>
-                        <h2 class="text-primary">@FormatTime(QuizService.CurrentSession?.TempoRimanente ?? TimeSpan.Zero)</h2>
+                        <h2 class="@GetTimerCssClass()">@FormatTime(QuizService.CurrentSession?.TempoRimanente ?? TimeSpan.Zero)</h2>
                     </div>
                 </div>
                 
@@ -387,6 +387,18 @@
         return $"{(int)time.TotalMinutes:D2}:{time.Seconds:D2}";
     }
 
+    private string GetTimerCssClass()
+    {
+        var tempoRimanente = QuizService.CurrentSession?.TempoRimanente ?? TimeSpan.Zero;
+        
+        if (tempoRimanente.TotalSeconds <= 10 && tempoRimanente.TotalSeconds > 0)
+        {
+            return "text-danger timer-blinking";
+        }
+        
+        return "text-primary";
+    }
+
     public ValueTask DisposeAsync()
     {
         try
@@ -401,3 +413,19 @@
         return ValueTask.CompletedTask;
     }
 }
+
+<style>
+    .timer-blinking {
+        animation: blink-timer 1s infinite;
+        font-weight: bold;
+    }
+
+    @@keyframes blink-timer {
+        0%, 50% {
+            opacity: 1;
+        }
+        51%, 100% {
+            opacity: 0.3;
+        }
+    }
+</style>

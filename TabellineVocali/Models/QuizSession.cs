@@ -45,6 +45,8 @@ public class SessionStats
 {
     public int Corrette { get; set; }
     public int Sbagliate { get; set; }
+    public int TentativiTotali { get; set; }
+    public int TentativiErrati { get; set; }
     public double AccuratezzaPercentuale { get; set; }
     public double TempoMedio { get; set; }
     public double TempoMinimo { get; set; }
