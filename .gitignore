@@ -10,6 +10,11 @@
 *.userosscache
 *.sln.docstates
 
+# Deploy credentials (NEVER commit passwords!)
+.env.deploy
+*.publish
+*.publishproj
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
